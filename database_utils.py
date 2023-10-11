@@ -19,8 +19,14 @@ class DatabaseConnector:
         table_names = inspector.get_table_names()
         return table_names
     
-    def upload_to_db(self, engine, df, table_name):
-        with engine.connect() as conn:
+    def init_local_db_engine(self):
+        db_url = f"postgresql://{db_creds['lOCAL_USER']}:{db_creds['LOCAL_PASSWORD']}@{db_creds['LOCAL_HOST']}:{db_creds['LOCAL_PORT']}/{db_creds['LOCAL_DATABASE']}"
+        local_db_engine = sqlalchemy.create_engine(db_url)
+        return local_db_engine
+
+    def upload_to_db(self, df, table_name):
+        local_db_engine = self.init_local_db_engine()
+        with local_db_engine.connect() as conn:
             df.to_sql(table_name, con=conn, if_exists='replace', index=False)
 
 if __name__ == '__main__':

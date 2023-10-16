@@ -18,13 +18,13 @@ __Product Data Extraction from CSV:__ Extracting product data stored in a CSV fo
 __Order Data Extraction:__ Extracting order information from a database table and cleaning the data before storing it in the orders_table table.
 
 
-File Structure
+## File Structure
 ```
 retail-data-centralisation/
 │
 ├── data_extractor.py        # DataExtractor class for data extraction
 ├── data_cleaning.py         # DataCleaning class for data cleaning
-├── database_connector.py    # DatabaseConnector class for database interactions
+├── database_utils.py    # DatabaseConnector class for database interactions
 ├── my_file.py                  # Main script for data extraction and storage
 └── README.md                # Project README file
 ```

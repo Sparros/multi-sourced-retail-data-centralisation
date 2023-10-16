@@ -5,18 +5,23 @@ This project focuses on centralising retail data from various sources into a cen
 ## Project Overview
 The primary components of this project include:
 
-###<b>Database Setup:</b>### Setting up a local PostgreSQL database named sales_data using pgAdmin 4 to store the extracted retail data.
+### Database Setup:
+Setting up a local PostgreSQL database named sales_data using pgAdmin 4 to store the extracted retail data.
 
 ### AWS RDS Data Extraction: 
 Extracting historical user data from an AWS RDS database using the provided credentials and methods in the DatabaseConnector and DataExtractor classes.
 
-Card Details Extraction from PDF: Extracting users' card details from a PDF document stored in an AWS S3 bucket, cleaning the data, and storing it in the dim_card_details table.
+### Card Details Extraction from PDF: 
+Extracting users' card details from a PDF document stored in an AWS S3 bucket, cleaning the data, and storing it in the dim_card_details table.
 
-Store Data Retrieval from API: Retrieving store information through API endpoints, cleaning the data, and storing it in the dim_store_details table.
+### Store Data Retrieval from API: 
+Retrieving store information through API endpoints, cleaning the data, and storing it in the dim_store_details table.
 
-Product Data Extraction from CSV: Extracting product data stored in a CSV format in an AWS S3 bucket, cleaning and standardising the weights, and storing it in the dim_products table.
+### Product Data Extraction from CSV: 
+Extracting product data stored in a CSV format in an AWS S3 bucket, cleaning and standardising the weights, and storing it in the dim_products table.
 
-Order Data Extraction: Extracting order information from a database table and cleaning the data before storing it in the orders_table table.
+### Order Data Extraction: 
+Extracting order information from a database table and cleaning the data before storing it in the orders_table table.
 
 
 File Structure

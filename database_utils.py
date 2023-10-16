@@ -9,7 +9,8 @@ class DatabaseConnector:
             db_creds = yaml.load(f, Loader=yaml.FullLoader)
         return db_creds
     
-    def init_db_engine(self, db_creds):
+    def init_db_engine(self):
+        db_creds = self.read_db_creds()
         db_url = f"postgresql://{db_creds['RDS_USER']}:{db_creds['RDS_PASSWORD']}@{db_creds['RDS_HOST']}:{db_creds['RDS_PORT']}/{db_creds['RDS_DATABASE']}"
         engine = sqlalchemy.create_engine(db_url)
         return engine
@@ -20,6 +21,7 @@ class DatabaseConnector:
         return table_names
     
     def init_local_db_engine(self):
+        db_creds = self.read_db_creds()
         db_url = f"postgresql://{db_creds['lOCAL_USER']}:{db_creds['LOCAL_PASSWORD']}@{db_creds['LOCAL_HOST']}:{db_creds['LOCAL_PORT']}/{db_creds['LOCAL_DATABASE']}"
         local_db_engine = sqlalchemy.create_engine(db_url)
         return local_db_engine

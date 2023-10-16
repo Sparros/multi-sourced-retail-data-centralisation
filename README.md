@@ -24,7 +24,7 @@ retail-data-centralisation/
 │
 ├── data_extractor.py        # DataExtractor class for data extraction
 ├── data_cleaning.py         # DataCleaning class for data cleaning
-├── database_utils.py    # DatabaseConnector class for database interactions
-├── my_file.py                  # Main script for data extraction and storage
+├── database_utils.py        # DatabaseConnector class for database interactions
+├── my_file.py               # Main script for data extraction and storage
 └── README.md                # Project README file
 ```

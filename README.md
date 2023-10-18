@@ -1,4 +1,4 @@
-# multi-sourced retail data centralisation
+# multi-sourced retail data centralisation - In Progress
 
 This project demonstrates the centralisation of retail data from diverse sources into a centralized PostgreSQL database using pgAdmin 4. The extracted data encompasses crucial aspects such as company information, user data, card details, store information, product data, and order information. The primary objective is to enable comprehensive analysis and derive valuable insights from this consolidated data.
 

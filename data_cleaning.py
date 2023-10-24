@@ -1,5 +1,7 @@
 import pandas as pd
+import datetime
 pd.set_option('display.max_columns', None)  # Set to display all columns
+pd.options.mode.chained_assignment = None  # default='warn'
 from data_extraction import DataExtractor
 
 from database_utils import DatabaseConnector
@@ -38,25 +40,52 @@ class DataCleaning:
         # Drop rows with NULL values
         self.df.dropna(inplace=True)
         
-        # Convert date columns to datetime format
-        date_cols = ['expiry_date']
-        for col in date_cols:
-            self.df[col] = pd.to_datetime(self.df[col], errors='coerce')
-        
-        # Convert amount column to float format
-        self.df['amount'] = pd.to_numeric(self.df['amount'], errors='coerce')
-        
-        # Drop rows with incorrect amount values
-        self.df.dropna(subset=['amount'], inplace=True)
-        self.df = self.df[self.df['amount'] > 0]
-        
-        # Drop rows with incorrect card type values
-        self.df = self.df[self.df['card_type'].isin(['Visa', 'Mastercard', 'American Express'])]
-        
+        # Remove rows with invalid 'expiry_date'
+        self.df = self.df[self.df['expiry_date'].apply(self.validate_expiry_date)]
+
+        # Clean and format 'card_provider'
+        self.df['card_provider'] = self.df['card_provider'].str.strip()
+
+        # Remove rows with invalid card numbers using Luhn algorithm
+        #self.df = self.df[self.df['card_number'].apply(self.luhn_algo)]
+
         # Reset index
         self.df.reset_index(drop=True, inplace=True)
         
         return self.df
+    
+    def luhn_algo(self, card_number):
+        if len(card_number) < 13 or len(card_number) > 19:
+            return False
+
+        total = 0
+        reverse = card_number[::-1]
+        for i, digit in enumerate(reverse):
+            if i % 2 == 1:
+                double_digit = int(digit) * 2
+                if double_digit > 9:
+                    double_digit -= 9
+                total += double_digit
+            else:
+                total += int(digit)
+
+        return total % 10 == 0
+
+    def validate_expiry_date(self, date_str):
+        try:
+            # Parse the 'expiry_date' string to extract the month and year
+            date_parts = date_str.split('/')
+            month = int(date_parts[0])
+            year = int(date_parts[1])
+
+            # Check if the month is between 1 and 12 and if the year is not in the past
+            current_date = datetime.datetime.now()
+            if 1 <= month <= 12 and year >= current_date.year % 100:
+                return True
+        except (ValueError, IndexError):
+            pass
+
+        return False
     
     def clean_store_data(self):
         # Drop rows with NULL or NaN values
@@ -108,16 +137,30 @@ class DataCleaning:
         return self.df
 
 if __name__ == '__main__':
+    # Init engine
     db = DatabaseConnector()
     db_creds = db.read_db_creds()
-    engine = db.init_db_engine(db_creds)
-    extractor = DataExtractor('legacy_users')
-    df = extractor.read_rds_table(engine)
+    engine = db.init_db_engine()
 
+    # Extract user data from RDS database
+    # extractor = DataExtractor('legacy_users')
+    # df = extractor.read_rds_table(engine)
+    #print('Data extracted from RDS database')
+
+    # Clean the Data
     #print(df.head())
-    #print(df.isnull().sum())
-    cleaner = DataCleaning(df)
+    #cleaner = DataCleaning(df)
+    # cleaned_df = cleaner.clean_user_data()
 
-    cleaned_df = cleaner.clean_user_data()
-    print(cleaned_df.head())
-    #print(cleaned_df.isnull().sum())
+    # Extract card data from PDF file
+    pdf_url = db_creds["pdf_url"]
+    pdf_extractor = DataExtractor('card_data')
+    card_df = pdf_extractor.retrieve_pdf_data(pdf_url)
+    print(card_df.head())
+    print(card_df.columns)
+    print(len(card_df))
+    cleaner = DataCleaning(card_df)
+    clean_card_df = cleaner.clean_card_data()
+    print('Card data cleaned')
+    print(clean_card_df.head())
+    print(len(clean_card_df))

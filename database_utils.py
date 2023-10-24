@@ -22,7 +22,7 @@ class DatabaseConnector:
     
     def init_local_db_engine(self):
         db_creds = self.read_db_creds()
-        db_url = f"postgresql://{db_creds['lOCAL_USER']}:{db_creds['LOCAL_PASSWORD']}@{db_creds['LOCAL_HOST']}:{db_creds['LOCAL_PORT']}/{db_creds['LOCAL_DATABASE']}"
+        db_url = f"postgresql://{db_creds['LOCAL_USER']}:{db_creds['LOCAL_PASSWORD']}@{db_creds['LOCAL_HOST']}:{db_creds['LOCAL_PORT']}/{db_creds['LOCAL_DATABASE']}"
         local_db_engine = sqlalchemy.create_engine(db_url)
         return local_db_engine
 

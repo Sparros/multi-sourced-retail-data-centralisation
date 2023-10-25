@@ -91,12 +91,8 @@ class DataCleaning:
         # Drop rows with NULL or NaN values
         self.df.dropna(how='any', inplace=True)
         
-        # Remove leading/trailing white space from store_name and store_address columns
-        self.df['store_name'] = self.df['store_name'].str.strip()
-        self.df['store_address'] = self.df['store_address'].str.strip()
-        
-        # Convert store_number column to integer format
-        self.df['store_number'] = self.df['store_number'].astype(int)
+        # Replace slashes and newline characters with a comma and space
+        self.df['address'] = self.df['address'].str.replace(r'\n', ', ')
         
         # Reset index
         self.df.reset_index(drop=True, inplace=True)

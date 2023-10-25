@@ -37,7 +37,6 @@ db.upload_to_db(cleaned_df, 'dim_card_details')
 print("uploaded card data")
 
 # Extract store data from API
-
 num_stores_endpoint = db_creds["num_stores_endpoint"]
 store_endpoint = db_creds["store_endpoint"]
 headers = {'x-api-key': db_creds["api_key"]}

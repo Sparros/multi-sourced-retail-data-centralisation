@@ -3,13 +3,17 @@ import datetime
 pd.set_option('display.max_columns', None)  # Set to display all columns
 pd.options.mode.chained_assignment = None  # default='warn'
 from data_extraction import DataExtractor
-
 from database_utils import DatabaseConnector
 
 class DataCleaning:
 
     def __init__(self, df):
         self.df = df
+        self.card_df = df
+        self.card_df = df
+        self.products_df = df
+        self.orders_df = df
+        self.date_events_df = df
     
     def clean_user_data(self):
         # Create a copy of the DataFrame to ensure modifications are made to the original DataFrame
@@ -38,21 +42,21 @@ class DataCleaning:
     
     def clean_card_data(self):
         # Drop rows with NULL values
-        self.df.dropna(inplace=True)
+        self._card_df.dropna(inplace=True)
         
         # Remove rows with invalid 'expiry_date'
-        self.df = self.df[self.df['expiry_date'].apply(self.validate_expiry_date)]
+        self.card_df = self.card_df[self.card_df['expiry_date'].apply(self.validate_expiry_date)]
 
         # Clean and format 'card_provider'
-        self.df['card_provider'] = self.df['card_provider'].str.strip()
+        self.card_df['card_provider'] = self.card_df['card_provider'].str.strip()
 
         # Remove rows with invalid card numbers using Luhn algorithm
         #self.df = self.df[self.df['card_number'].apply(self.luhn_algo)]
 
         # Reset index
-        self.df.reset_index(drop=True, inplace=True)
+        self.card_df.reset_index(drop=True, inplace=True)
         
-        return self.df
+        return self.card_df
     
     def luhn_algo(self, card_number):
         if len(card_number) < 13 or len(card_number) > 19:
@@ -89,48 +93,74 @@ class DataCleaning:
     
     def clean_store_data(self):
         # Drop rows with NULL or NaN values
-        self.df.dropna(how='any', inplace=True)
+        self.store_df.dropna(how='any', inplace=True)
         
         # Replace slashes and newline characters with a comma and space
-        self.df['address'] = self.df['address'].str.replace(r'\n', ', ')
+        self.store_df['address'] = self.store_df['address'].str.replace(r'\n', ', ')
         
         # Reset index
-        self.df.reset_index(drop=True, inplace=True)
+        self.store_df.reset_index(drop=True, inplace=True)
         
-        return self.df
+        return self.store_df
     
-    def convert_product_weights(self):
-        # Remove excess characters from weight column
-        self.df['weight'] = self.df['weight'].str.replace('[^0-9\.]', '')
+    def convert_product_weights(self):  
+        # Remove rows with None (unknown or invalid values)
+        self.products_df = self.products_df.dropna(subset=['weight'])
+
+        # Convert units to kg
+        for index, row in self.products_df.iterrows():
+            try:
+                if 'g' in row['weight'] and 'kg' not in row['weight']:
+                    if 'x' in row['weight']:
+                        weight_parts = row['weight'].split('x')
+                        self.products_df.at[index, 'weight'] = float(weight_parts[0]) * float(weight_parts[1].replace('g', '')) / 1000
+                        continue
+                    self.products_df.at[index, 'weight'] = float(row['weight'].replace('g', '')) / 1000
+                elif 'ml' in row['weight']:
+                    self.products_df.at[index, 'weight'] = float(row['weight'].replace('ml', '')) / 1000
+                else:
+                    self.products_df.at[index, 'weight'] = float(row['weight'].replace('kg', ''))
+            except ValueError:
+                self.products_df.at[index, 'weight'] = None
         
-        # Convert ml to g using 1:1 ratio
-        self.df.loc[self.df['weight_unit'] == 'ml', 'weight'] = self.df['weight'][self.df['weight_unit'] == 'ml'].astype(float) * 1
+        # Remove rows with None (unknown or invalid values)
+        self.products_df = self.products_df.dropna(subset=['weight'])
+
+        # Convert the 'weight' column to a float data type
+        self.products_df['weight'] = self.products_df['weight'].astype(float)
         
-        # Convert weight to kg
-        self.df.loc[self.df['weight_unit'] == 'g', 'weight'] = self.df['weight'][self.df['weight_unit'] == 'g'].astype(float) / 1000
-        
-        # Drop weight_unit column
-        self.df.drop('weight_unit', axis=1, inplace=True)
-        
-        return self.df
+        return self.products_df
     
     def clean_products_data(self):
         # Drop rows with NULL or NaN values
-        self.df.dropna(how='any', inplace=True)
-        
-        # Remove leading/trailing white space from product_name column
-        self.df['product_name'] = self.df['product_name'].str.strip()
-        
-        # Remove excess characters from price column
-        self.df['price'] = self.df['price'].str.replace('[^0-9\.]', '')
-        
-        # Convert price to float
-        self.df['price'] = self.df['price'].astype(float)
-        
+        self.products_df.dropna(how='any', inplace=True)
+
         # Reset index
-        self.df.reset_index(drop=True, inplace=True)
+        self.products_df.reset_index(drop=True, inplace=True)
         
         return self.df
+    
+    def clean_orders_data(self):
+        # Drop column 1, level_0, first_name, last_name
+        self.orders_df.drop(columns=['1'], inplace=True)
+        self.orders_df.drop(columns=['index'], inplace=True)
+        self.orders_df.drop(columns=['first_name'], inplace=True)
+        self.orders_df.drop(columns=['last_name'], inplace=True)
+
+        # Reset the index
+        self.orders_df.reset_index(drop=True, inplace=True)
+
+        return self.orders_df
+
+    def clean_date_events(self):
+        # Drop rows with NULL or NaN values
+        self.date_events_df.dropna(how='any', inplace=True)
+
+        # Reset index
+        self.date_events_df.reset_index(drop=True, inplace=True)
+
+        return self.date_events_df
+
 
 if __name__ == '__main__':
     # Init engine
@@ -138,7 +168,7 @@ if __name__ == '__main__':
     db_creds = db.read_db_creds()
     engine = db.init_db_engine()
 
-    # Extract user data from RDS database
+    ### Extract user data from RDS database
     # extractor = DataExtractor('legacy_users')
     # df = extractor.read_rds_table(engine)
     #print('Data extracted from RDS database')
@@ -148,15 +178,27 @@ if __name__ == '__main__':
     #cleaner = DataCleaning(df)
     # cleaned_df = cleaner.clean_user_data()
 
-    # Extract card data from PDF file
-    pdf_url = db_creds["pdf_url"]
-    pdf_extractor = DataExtractor('card_data')
-    card_df = pdf_extractor.retrieve_pdf_data(pdf_url)
-    print(card_df.head())
-    print(card_df.columns)
-    print(len(card_df))
-    cleaner = DataCleaning(card_df)
-    clean_card_df = cleaner.clean_card_data()
-    print('Card data cleaned')
-    print(clean_card_df.head())
-    print(len(clean_card_df))
+    ### Extract + clean card data from PDF file
+    # pdf_url = db_creds["pdf_url"]
+    # pdf_extractor = DataExtractor('card_data')
+    # card_df = pdf_extractor.retrieve_pdf_data(pdf_url)
+    # print(card_df.head())
+    # print(card_df.columns)
+    # print(len(card_df))
+    # cleaner = DataCleaning(card_df)
+    # clean_card_df = cleaner.clean_card_data()
+    # print('Card data cleaned')
+    # print(clean_card_df.head())
+    # print(len(clean_card_df))
+
+    ### Extract + clean product data from S3 bucket
+    s3_bucket = db_creds["s3_bucket"]
+    s3_extractor = DataExtractor('product_data')
+    product_df = s3_extractor.extract_from_s3(s3_bucket)
+    print(product_df.head())
+    #print(product_df['weight'].head(20))
+    cleaner = DataCleaning(product_df)
+    clean_product_df = cleaner.convert_product_weights()
+    #print(clean_product_df['weight'].head(20))
+    clean_product_df = cleaner.clean_products_data()
+    print(clean_product_df.head())

@@ -5,7 +5,7 @@ from sqlalchemy import text, inspect
 class DatabaseConnector:
 
     def read_db_creds(self):
-        with open('db_creds.yaml') as f:
+        with open('..\multinational-retail-data-centralisation\db_creds.yaml') as f:
             db_creds = yaml.load(f, Loader=yaml.FullLoader)
         return db_creds
     

@@ -2,6 +2,7 @@ import pandas as pd
 import tabula
 import requests
 import boto3
+import urllib.parse
 from botocore.exceptions import ClientError
 from sqlalchemy import text
 from database_utils import DatabaseConnector
@@ -80,20 +81,35 @@ class DataExtractor:
         stores_df = pd.DataFrame(stores_list)
         return stores_df
     
-    def extract_from_s3(self, s3_address):
+    def extract_from_s3(self, s3_address_key):
+        db = DatabaseConnector()
+        db_creds = db.read_db_creds()
         s3 = boto3.client('s3', aws_access_key_id=db_creds["AWS_ACCESS_KEY_ID"], aws_secret_access_key=db_creds["AWS_SECRET_ACCESS_KEY"])
-
-        # Split S3 address into bucket and key
-        s3_parts = s3_address.replace('s3://', '').split('/')
-        bucket = s3_parts[0]
-        key = '/'.join(s3_parts[1:])
         
-        # Download file from S3
+        # Retrieve the S3 address from your credentials based on the provided key
+        s3_address = db_creds.get(s3_address_key)
+
+        if not s3_address:
+            print(f"S3 address for key '{s3_address_key}' not found in credentials.")
+            return None
+
+        # Parse the S3 address to extract the bucket and key
+        if s3_address.startswith('s3://'):
+            s3_parts = s3_address[5:].split('/')
+            bucket = s3_parts[0]
+            key = '/'.join(s3_parts[1:])
+        else:
+            parsed_url = urllib.parse.urlparse(s3_address)
+            print(parsed_url)
+            bucket = parsed_url.netloc.split('.')[0]
+            key = parsed_url.path.lstrip('/')
+            
         try:
             response = s3.get_object(Bucket=bucket, Key=key)
-            #response = s3.list_buckets()
-            print(response)
-            product_df = pd.read_csv(response['Body'])
+            if key.endswith('.json'):
+                product_df = pd.read_json(response['Body'])
+            else:
+                product_df = pd.read_csv(response['Body'])
             return product_df
         except ClientError as e:
             error_code = e.response['Error']['Code']
@@ -125,7 +141,8 @@ if __name__ == '__main__':
     # print(stores_df.head())
 
     ### Extract product data from S3 bucket
-    s3_bucket = db_creds["s3_bucket"]
     extractor = DataExtractor('product_data')
-    product_df = extractor.extract_from_s3(s3_bucket)
-    #print(product_df.head())
+    product_df = extractor.extract_from_s3('s3_date_events_bucket')
+    print(product_df.head())
+    
+

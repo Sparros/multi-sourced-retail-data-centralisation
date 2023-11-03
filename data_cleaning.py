@@ -1,5 +1,6 @@
 import pandas as pd
 import datetime
+import uuid
 pd.set_option('display.max_columns', None)  # Set to display all columns
 pd.options.mode.chained_assignment = None  # default='warn'
 from data_extraction import DataExtractor
@@ -42,7 +43,7 @@ class DataCleaning:
     
     def clean_card_data(self):
         # Drop rows with NULL values
-        self._card_df.dropna(inplace=True)
+        self.card_df.dropna(inplace=True)
         
         # Remove rows with invalid 'expiry_date'
         self.card_df = self.card_df[self.card_df['expiry_date'].apply(self.validate_expiry_date)]
@@ -156,12 +157,25 @@ class DataCleaning:
         # Drop rows with NULL or NaN values
         self.date_events_df.dropna(how='any', inplace=True)
 
+        # Check UUID is valid
+        self.date_events_df = self.date_events_df[self.date_events_df.apply(self.is_valid_uuid, axis=1, uuid_column_name='date_uuid')]        
+        
+        # Drop colum 'timestamp'
+        self.date_events_df.drop(columns=['timestamp'], inplace=True)        
+        
         # Reset index
         self.date_events_df.reset_index(drop=True, inplace=True)
 
         return self.date_events_df
 
-
+    # Function to check if a value is a valid UUID
+    def is_valid_uuid(self, row, uuid_column_name):
+        try:
+            uuid.UUID(row[uuid_column_name])
+            return True
+        except ValueError:
+            return False
+        
 if __name__ == '__main__':
     # Init engine
     db = DatabaseConnector()
@@ -191,14 +205,19 @@ if __name__ == '__main__':
     # print(clean_card_df.head())
     # print(len(clean_card_df))
 
+    ### Extract + clean date events data from S3 bucket
+    s3_extractor = DataExtractor('date_events')
+    date_events_df = s3_extractor.extract_from_s3('s3_date_events_bucket')
+    print(date_events_df.head())
+    cleaner = DataCleaning(date_events_df)
+    clean_date_events_df = cleaner.clean_date_events()
+    print(clean_date_events_df.head())
+
     ### Extract + clean product data from S3 bucket
-    s3_bucket = db_creds["s3_bucket"]
-    s3_extractor = DataExtractor('product_data')
-    product_df = s3_extractor.extract_from_s3(s3_bucket)
-    print(product_df.head())
-    #print(product_df['weight'].head(20))
-    cleaner = DataCleaning(product_df)
-    clean_product_df = cleaner.convert_product_weights()
-    #print(clean_product_df['weight'].head(20))
-    clean_product_df = cleaner.clean_products_data()
-    print(clean_product_df.head())
+    # s3_extractor = DataExtractor('product_data')
+    # product_df = s3_extractor.extract_from_s3('s3_product_data_bucket')
+    # print(product_df.head())
+    # cleaner = DataCleaning(product_df)
+    # clean_product_df = cleaner.convert_product_weights()
+    # clean_product_df = cleaner.clean_products_data()
+    # print(clean_product_df.head())

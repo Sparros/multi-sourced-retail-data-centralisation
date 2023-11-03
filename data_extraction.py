@@ -100,10 +100,9 @@ class DataExtractor:
             key = '/'.join(s3_parts[1:])
         else:
             parsed_url = urllib.parse.urlparse(s3_address)
-            print(parsed_url)
             bucket = parsed_url.netloc.split('.')[0]
             key = parsed_url.path.lstrip('/')
-            
+
         try:
             response = s3.get_object(Bucket=bucket, Key=key)
             if key.endswith('.json'):

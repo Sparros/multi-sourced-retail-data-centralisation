@@ -1,0 +1,7 @@
+"schemaname","tablename","tableowner","tablespace","hasindexes","hasrules","hastriggers","rowsecurity"
+"public","dim_users","sparro",NULL,False,False,False,False
+"public","orders_table","sparro",NULL,False,False,False,False
+"public","dim_card_details","sparro",NULL,False,False,False,False
+"public","dim_date_events","sparro",NULL,False,False,False,False
+"public","dim_products","sparro",NULL,False,False,False,False
+"public","dim_date_times","sparro",NULL,False,False,False,False
